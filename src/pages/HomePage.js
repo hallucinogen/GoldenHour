@@ -10,6 +10,7 @@ import encodeFormData from 'GoldenHour/src/lib/encodeFormData';
 
 const ONE_MINUTE = 60 * 1000;
 
+// TODO (hallucinogen): move networking logic into other files
 export default class HomePage extends Component {
   constructor(props) {
     super();
@@ -19,6 +20,7 @@ export default class HomePage extends Component {
       position: undefined,
       ssPayload: undefined,
       lastFetchTime: undefined,
+      weather: undefined,
     }
     this.fetchPromise = Promise.resolve(null);
   }
@@ -46,15 +48,33 @@ export default class HomePage extends Component {
       return Promise.resolve(null);
     }
 
-    let params = {
+    let params1 = {
       lat: coords.latitude,
       lng: coords.longitude,
       date: 'today',
       formatted: 0,
     };
-    return fetch('http://api.sunrise-sunset.org/json?' + encodeFormData(null, params))
-      .then(response => response.json())
-      .then(result => this.setState({ ssPayload: result.results, lastFetchTime: fetchTime }));
+    let params2 = {
+      lat: coords.latitude,
+      lon: coords.longitude,
+      // TODO (hallucinogen): store API key inside NODE_ENV
+      appid: 'some API key',
+    }
+    
+    let promise1 = fetch('http://api.sunrise-sunset.org/json?' + encodeFormData(null, params1))
+      .then(response => response.json());
+    // TODO (hallucinogen): this API call is giga expensive. We might want to store somewhere.
+    let promise2 = fetch('http://api.openweathermap.org/data/2.5/weather?' + encodeFormData(null, params2))
+      .then(response => response.json());
+    return Promise.all([promise1, promise2])
+      .then((results) => {
+        // Assume both successfully fetched.
+        this.setState({
+          ssPayload: results[0].results,
+          weather: (results[1].weather ? results[1].weather[0].description : null),
+          lastFetchTime: fetchTime,
+        })
+      });
   }
 
   render() {
@@ -80,6 +100,8 @@ export default class HomePage extends Component {
 
     return (
       <View style={styles.container}>
+        <Text style={styles.weatherText}>{this.state.weather || `Can't determine weather`}</Text>
+
         <View style={styles.ssContainer}>
           <Text style={styles.ssText}>Sunrise Blue Hour: { sunriseBH }</Text>
           <Text style={styles.ssText}>Sunrise: { sunrise }</Text>
@@ -110,5 +132,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#333333',
     marginBottom: 5,
+  },
+  weatherText: {
+    textAlign: 'center',
+    fontSize: 20,
+    margin: 25,
   },
 });
