@@ -10,7 +10,6 @@ import React, {
   Text,
   View
 } from 'react-native';
-import HomePage from 'src/HomePage';
 
 class GoldenHour extends Component {
   render() {
@@ -25,7 +24,6 @@ class GoldenHour extends Component {
         <Text style={styles.instructions}>
           Shake or press menu button for dev menu
         </Text>
-        <HomePage />
       </View>
     );
   }
